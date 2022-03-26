@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/services/prefs_service.dart';
 import 'package:intl/intl.dart';
@@ -100,6 +99,7 @@ class Utils {
         'device_token': token
       });
     }
+
     return params;
   }
 
