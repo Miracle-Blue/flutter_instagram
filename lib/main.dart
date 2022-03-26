@@ -20,7 +20,7 @@ import 'views/themes.dart' show themeLight;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
+
 
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitDown, DeviceOrientation.portraitUp]).then((value) {

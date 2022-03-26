@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -116,7 +117,7 @@ class Utils {
   //   var iOS = IOSNotificationDetails();
   //   var platform = NotificationDetails(android: android, iOS: iOS);
   //
-  //   int id = Random().nextInt(pow(2, 31) - 1);
+  //   int id = Random().nextInt(pow(2, 31) - 1 as int);
   //   await FlutterLocalNotificationsPlugin().show(id, title, body, platform);
   // }
 }

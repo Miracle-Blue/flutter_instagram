@@ -184,10 +184,13 @@ class _LikePageState extends State<LikePage> {
                     },
                     icon: post.liked
                         ? const Icon(
-                            FontAwesomeIcons.heart,
+                            FontAwesomeIcons.solidHeart,
                             color: Colors.red,
                           )
-                        : const Icon(FontAwesomeIcons.solidHeart),
+                        : const Icon(
+                            FontAwesomeIcons.heart,
+                            color: Colors.red,
+                          ),
                   ),
                   IconButton(
                     onPressed: () {},
