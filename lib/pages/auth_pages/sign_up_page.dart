@@ -38,10 +38,10 @@ class _SignUpPageState extends State<SignUpPage> {
         email.isNotEmpty &&
         password.isNotEmpty) {
 
+      setState(() => isLoading = true);
+
       if (!Utils.emailValidate(email)) return;
       if (!Utils.passwordValidate(password)) return;
-
-      setState(() => isLoading = true);
 
       var modelUser = model.User(password: password, email: email, fullName:  name);
 

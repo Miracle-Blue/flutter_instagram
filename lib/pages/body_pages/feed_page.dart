@@ -43,6 +43,40 @@ class _FeedPageState extends State<FeedPage> {
     });
   }
 
+  void _apiPostLike(Post post) async {
+    setState(() {
+      isLoading = true;
+    });
+    await DataService.likePost(post, true);
+    setState(() {
+      isLoading = false;
+      post.liked = true;
+    });
+  }
+
+  void _apiPostUnLike(Post post) async {
+    setState(() {
+      isLoading = true;
+    });
+    await DataService.likePost(post, false);
+    setState(() {
+      isLoading = false;
+      post.liked = false;
+    });
+  }
+
+  void _actionRemovePost(Post post) async{
+    var result = await Utils.dialogCommon(context, "Insta Clone", "Do you want to remove this post?", false);
+    if(result != null && result){
+      setState(() {
+        isLoading = true;
+      });
+      DataService.removePost(post).then((value) => {
+        _apiLoadFeeds(),
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,17 +133,27 @@ class _FeedPageState extends State<FeedPage> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(40),
-                      child: CachedNetworkImage(
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        imageUrl: post.imgUser!,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey,
-                        ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
-                      ),
+                      child: post.imgUser != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(40),
+                              child: CachedNetworkImage(
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                imageUrl: post.imgUser!,
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey,
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              ),
+                            )
+                          : const Image(
+                              image: AssetImage("assets/images/im_user.jpg"),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Column(
@@ -129,7 +173,9 @@ class _FeedPageState extends State<FeedPage> {
                   ],
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    _actionRemovePost(post);
+                  },
                   icon: const Icon(
                     Icons.more_horiz,
                     color: Colors.black,
@@ -157,7 +203,9 @@ class _FeedPageState extends State<FeedPage> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      post.liked ? _apiPostUnLike(post) : _apiPostLike(post);
+                    },
                     icon: post.liked
                         ? const Icon(
                             FontAwesomeIcons.solidHeart,

@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/post_model.dart';
+import 'package:flutter_instagram/services/data_service.dart';
+import 'package:flutter_instagram/services/utils.dart';
 import 'package:flutter_instagram/views/main_texts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:line_icons/line_icons.dart';
@@ -15,12 +17,51 @@ class LikePage extends StatefulWidget {
 }
 
 class _LikePageState extends State<LikePage> {
-  final bool isLoading = false;
+  bool isLoading = false;
+  List<Post> postList = [];
 
-  final List<Post> postList = [
-    Post(imgPost: "assets/images/im_user.jpg", caption: "caption"),
-    Post(imgPost: "assets/images/im_user.jpg", caption: "caption"),
-  ];
+  void _apiLoadLikes() {
+    setState(() {
+      isLoading = true;
+    });
+    DataService.loadLikes().then((value) => {
+          _resLoadLikes(value),
+        });
+  }
+
+  void _resLoadLikes(List<Post> posts) {
+    setState(() {
+      postList = posts;
+      isLoading = false;
+    });
+  }
+
+  void _apiPostUnLike(Post post) {
+    setState(() {
+      isLoading = true;
+      post.liked = false;
+    });
+    DataService.likePost(post, false).then((value) => {
+          _apiLoadLikes(),
+        });
+  }
+
+  void _actionRemovePost(Post post) async {
+    var result = await Utils.dialogCommon(
+        context, "Insta Clone", "Do you want to remove this post?", false);
+    if (result) {
+      setState(() => isLoading = true);
+      DataService.removePost(post).then((value) => {
+            _apiLoadLikes(),
+          });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _apiLoadLikes();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,25 +111,40 @@ class _LikePageState extends State<LikePage> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(40),
-                      child: const Image(
-                        image: AssetImage("assets/images/im_user.jpg"),
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                      ),
+                      child: post.imgUser != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(40),
+                              child: CachedNetworkImage(
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                imageUrl: post.imgUser!,
+                                placeholder: (context, url) => Container(
+                                  color: Colors.grey,
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              ),
+                            )
+                          : const Image(
+                              image: AssetImage("assets/images/im_user.jpg"),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          "name",
-                          style: TextStyle(
+                          "${post.fullName?.substring(0, 1).toUpperCase()}${post.fullName?.substring(1, post.fullName!.length)}",
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, color: Colors.black),
                         ),
                         Text(
-                          "date ####-##-##",
-                          style: TextStyle(fontWeight: FontWeight.normal),
+                          Utils.getMonthDayYear(post.date!),
+                          style: const TextStyle(fontWeight: FontWeight.normal),
                         ),
                       ],
                     ),
@@ -97,19 +153,19 @@ class _LikePageState extends State<LikePage> {
                 post.mine
                     ? IconButton(
                         icon: const Icon(LineIcons.creativeCommonsShareAlike),
-                        onPressed: () {},
+                        onPressed: () {
+                          _actionRemovePost(post);
+                        },
                       )
                     : const SizedBox.shrink(),
               ],
             ),
           ),
-          //#image
-          //Image.network(post.postImage, fit: BoxFit.cover),
 
           CachedNetworkImage(
             width: MediaQuery.of(context).size.width,
-            imageUrl:
-                "https://c4.wallpaperflare.com/wallpaper/161/942/374/minimalism-planet-blue-bright-wallpaper-preview.jpg",
+            height: MediaQuery.of(context).size.width,
+            imageUrl: post.imgPost!,
             placeholder: (context, url) =>
                 const Center(child: CircularProgressIndicator.adaptive()),
             errorWidget: (context, url, error) => const Icon(Icons.error),
@@ -123,7 +179,9 @@ class _LikePageState extends State<LikePage> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      if (post.liked) _apiPostUnLike(post);
+                    },
                     icon: post.liked
                         ? const Icon(
                             FontAwesomeIcons.heart,

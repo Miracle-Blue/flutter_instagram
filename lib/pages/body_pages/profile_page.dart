@@ -4,8 +4,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/post_model.dart';
 import 'package:flutter_instagram/models/user_model.dart';
+import 'package:flutter_instagram/services/auth_service.dart';
 import 'package:flutter_instagram/services/data_service.dart';
 import 'package:flutter_instagram/services/file_service.dart';
+import 'package:flutter_instagram/services/utils.dart';
+import 'package:flutter_instagram/views/themes.dart' show colorTwo;
 import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -102,6 +105,13 @@ class _ProfilePageState extends State<ProfilePage>
     setState(() {});
   }
 
+  void _actionLogout() async{
+    var result = await Utils.dialogCommon(context, "Insta Clone", "Do you want to logout?", false);
+    if(result) {
+      AuthService.signOutUser(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return isLoading
@@ -129,6 +139,15 @@ class _ProfilePageState extends State<ProfilePage>
                   ),
                 ],
               ),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    _actionLogout();
+                  },
+                  icon: const Icon(Icons.exit_to_app),
+                  color: colorTwo,
+                ),
+              ],
             ),
             body: NestedScrollView(
               headerSliverBuilder:

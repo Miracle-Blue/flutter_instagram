@@ -39,6 +39,32 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  void _apiFollowUser(User someone) async {
+    setState(() => isLoading = true);
+
+    await DataService.followUser(someone);
+
+    setState(() {
+      someone.followed = true;
+      isLoading = false;
+    });
+
+    await DataService.storePostsToMyFeed(someone);
+  }
+
+  void _apiUnfollowUser(User someone) async {
+    setState(() => isLoading = true);
+
+    await DataService.unfollowUser(someone);
+
+    setState(() {
+      someone.followed = false;
+      isLoading = false;
+    });
+
+    await DataService.removePostsFromMyFeed(someone);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,8 +146,7 @@ class _SearchPageState extends State<SearchPage> {
                       width: 40,
                       fit: BoxFit.cover,
                       imageUrl: user.imgUrl,
-                      placeholder: (context, url) =>
-                      const Image(
+                      placeholder: (context, url) => const Image(
                         image: AssetImage("assets/images/im_user.jpg"),
                         fit: BoxFit.cover,
                       ),
@@ -156,7 +181,11 @@ class _SearchPageState extends State<SearchPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    user.followed
+                        ? _apiUnfollowUser(user)
+                        : _apiFollowUser(user);
+                  },
                   child: Container(
                     width: 100,
                     height: 30,
