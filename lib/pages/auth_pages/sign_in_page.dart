@@ -2,12 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/pages/home_page.dart';
 import 'package:flutter_instagram/services/auth_service.dart';
+import 'package:flutter_instagram/services/data_service.dart';
 import 'package:flutter_instagram/services/prefs_service.dart';
 import 'package:flutter_instagram/services/utils.dart';
 import 'package:flutter_instagram/views/background.dart';
 import 'package:flutter_instagram/views/elevated_button.dart';
 import 'package:flutter_instagram/views/main_texts.dart';
 import 'package:flutter_instagram/views/text_field.dart';
+import 'package:flutter_instagram/models/user_model.dart' as user_model;
 import 'sign_up_page.dart';
 
 class SignInPage extends StatefulWidget {
@@ -42,6 +44,13 @@ class _SignInPageState extends State<SignInPage> {
 
     if (user != null) {
       await Prefs.store(StorageKeys.UID, user.uid);
+
+      user_model.User newUser = await DataService.loadUserWithId(user.uid);
+
+      newUser.deviceToken = (await Prefs.load(StorageKeys.TOKEN))!;
+
+      await DataService.updateUser(newUser);
+
       Navigator.pushReplacementNamed(context, HomePage.id);
     } else {
       Utils.fireSnackBar("Check your email or password", context);

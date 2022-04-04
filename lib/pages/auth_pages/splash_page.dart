@@ -24,22 +24,12 @@ class _SplashPageState extends State<SplashPage> {
   void initState() {
     super.initState();
     openNextPage(context);
-    _initNotification();
+    _initNotificationToken();
   }
-  
-  // Stream<User> getData() {
-  //   return Stream.periodic(const Duration(seconds: 1))
-  //       .asyncMap((event) => getFirebaseUser());
-  // }
-  //
-  // Future<User> getFirebaseUser() {
-  //
-  // }
 
-  void _initNotification() {
-    _firebaseMessaging.requestPermission(sound: true, badge: true, alert: true);
+  void _initNotificationToken() async {
+    await _firebaseMessaging.requestPermission(sound: true, badge: true, alert: true);
     _firebaseMessaging.getToken().then((token) async {
-      assert(token != null);
       Log.d(token.toString());
       await Prefs.store(StorageKeys.TOKEN, token!);
     });

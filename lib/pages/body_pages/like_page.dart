@@ -7,6 +7,8 @@ import 'package:flutter_instagram/views/main_texts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:line_icons/line_icons.dart';
 
+import 'someone_profile_page.dart';
+
 class LikePage extends StatefulWidget {
   const LikePage({Key? key}) : super(key: key);
 
@@ -107,52 +109,64 @@ class _LikePageState extends State<LikePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(40),
-                      child: post.imgUser != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(40),
-                              child: CachedNetworkImage(
+                GestureDetector(
+                  onTap: () => {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SomeOneProfile(
+                          uid: post.uid!,
+                        ),
+                      ),
+                    ),
+                  },
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(40),
+                        child: (post.imgUser != null && post.imgUser!.isNotEmpty)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(40),
+                                child: CachedNetworkImage(
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  imageUrl: post.imgUser!,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey,
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              )
+                            : const Image(
+                                image: AssetImage("assets/images/im_user.jpg"),
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
-                                imageUrl: post.imgUser!,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey,
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
                               ),
-                            )
-                          : const Image(
-                              image: AssetImage("assets/images/im_user.jpg"),
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                            ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${post.fullName?.substring(0, 1).toUpperCase()}${post.fullName?.substring(1, post.fullName!.length)}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                        Text(
-                          Utils.getMonthDayYear(post.date!),
-                          style: const TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${post.fullName?.substring(0, 1).toUpperCase()}${post.fullName?.substring(1, post.fullName!.length)}",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
+                          Text(
+                            Utils.getMonthDayYear(post.date!),
+                            style: const TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 post.mine
                     ? IconButton(
-                        icon: const Icon(LineIcons.creativeCommonsShareAlike),
+                        icon: const Icon(Icons.more_horiz),
                         onPressed: () {
                           _actionRemovePost(post);
                         },
@@ -211,7 +225,10 @@ class _LikePageState extends State<LikePage> {
                 children: [
                   TextSpan(
                     text: " ${post.caption}",
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),

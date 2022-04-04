@@ -1,12 +1,37 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_instagram/models/post_model.dart';
 import 'package:flutter_instagram/services/prefs_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
 
 class Utils {
+  static Future<void> share(
+      {required Post post}) async {
+
+    print(post.toJson()["img_post"]);
+
+    final http.Response responseData = await http.get(Uri.parse(post.imgPost!));
+    var uint8list = responseData.bodyBytes;
+    var buffer = uint8list.buffer;
+    ByteData byteData = ByteData.view(buffer);
+    var tempDir = await getTemporaryDirectory();
+    File file = await File('${tempDir.path}/img').writeAsBytes(
+        buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+
+    await Share.shareFiles([file.path], text: post.caption);
+  }
+
   static bool emailValidate(String email) {
     return RegExp(
             r'^[a-zA-Z0-9.a-zA-Z0-9.!#$%&*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+')
@@ -57,26 +82,47 @@ class Utils {
     return await showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            !isSingle
-                ? MaterialButton(
-                    child: const Text("Cancel"),
-                    onPressed: () {
-                      Navigator.of(context).pop(false);
-                    },
-                  )
-                : const SizedBox.shrink(),
-            MaterialButton(
-              child: const Text("Confirm"),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-            )
-          ],
-        );
+        if (Platform.isIOS) {
+          return CupertinoAlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              if (!isSingle)
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                ),
+              TextButton(
+                child: const Text("Confirm"),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              )
+            ],
+          );
+        } else {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              if (!isSingle)
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                ),
+              TextButton(
+                child: const Text("Confirm"),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              )
+            ],
+          );
+        }
       },
     );
   }
@@ -104,20 +150,16 @@ class Utils {
     return params;
   }
 
-  // static Future<void> showLocalNotification(Map<String, dynamic> message) async {
-  //   String title = message['title'];
-  //   String body = message['body'];
-  //
-  //   if(Platform.isAndroid){
-  //     title = message['notification']['title'];
-  //     body = message['notification']['body'];
-  //   }
-  //
-  //   var android = NotificationSettings('channelId', 'channelName', 'channelDescription');
-  //   var iOS = IOSNotificationDetails();
-  //   var platform = NotificationDetails(android: android, iOS: iOS);
-  //
-  //   int id = Random().nextInt(pow(2, 31) - 1 as int);
-  //   await FlutterLocalNotificationsPlugin().show(id, title, body, platform);
-  // }
+  static Future<void> showLocalNotification(RemoteMessage message, BuildContext context) async {
+  String title = message.notification!.title!;
+  String body = message.notification!.body!;
+
+  var android = const AndroidNotificationDetails("channelId", "channelName",
+      channelDescription: "channelDescription");
+  var iOS = const IOSNotificationDetails();
+  var platform = NotificationDetails(android: android, iOS: iOS);
+
+  int id = Random().nextInt((pow(2, 31) - 1).toInt());
+  await FlutterLocalNotificationsPlugin().show(id, title, body, platform);
+  }
 }

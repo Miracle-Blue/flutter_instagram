@@ -1,34 +1,28 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/post_model.dart';
 import 'package:flutter_instagram/models/user_model.dart';
-import 'package:flutter_instagram/services/auth_service.dart';
 import 'package:flutter_instagram/services/data_service.dart';
-import 'package:flutter_instagram/services/file_service.dart';
-import 'package:flutter_instagram/services/utils.dart';
-import 'package:flutter_instagram/views/themes.dart' show colorTwo;
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_instagram/services/prefs_service.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+class SomeOneProfile extends StatefulWidget {
+  const SomeOneProfile({Key? key, required this.uid}) : super(key: key);
 
-  static const id = "/profile_page";
+  final String uid;
+  static const id = "/someone_profile";
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<SomeOneProfile> createState() => _SomeOneProfileState();
 }
 
-class _ProfilePageState extends State<ProfilePage>
+class _SomeOneProfileState extends State<SomeOneProfile>
     with SingleTickerProviderStateMixin {
   late TabController controller;
 
   bool isLoading = false;
-  File? _image;
   User? user;
   int countPosts = 0;
-
+  String? myUid;
   List<Post> postList = [];
 
   @override
@@ -45,73 +39,48 @@ class _ProfilePageState extends State<ProfilePage>
 
   void _loadUser() async {
     setState(() => isLoading = true);
-    user = await DataService.loadUser();
+    myUid = (await Prefs.load(StorageKeys.UID));
+    user = await DataService.loadUserWithId(widget.uid);
     setState(() => isLoading = false);
   }
 
-  void _imgPick(ImageSource source) async {
-    XFile? image = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 50);
-
-    if (image != null) {
-      setState(() {
-        _image = File(image.path);
-        _changePhoto();
-      });
-    }
-  }
-
-  void _changePhoto() async {
-    if (_image != null) {
-      setState(() => isLoading = true);
-      user!.imgUrl =
-          await FileService.uploadImage(_image!, FileService.folderUser);
-      await DataService.updateUser(user!);
-      setState(() => isLoading = false);
-    }
-  }
-
-  void _showPicker(context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext bc) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Pick Photo'),
-                  onTap: () {
-                    _imgPick(ImageSource.gallery);
-                    Navigator.of(context).pop();
-                  }),
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Take Photo'),
-                onTap: () {
-                  _imgPick(ImageSource.camera);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _loadPosts() async {
-    postList = await DataService.loadPosts();
+    setState(() => isLoading = true);
+    postList = await DataService.loadPostsWithId(widget.uid);
     countPosts = postList.length;
-    setState(() {});
+    setState(() => isLoading = false);
   }
 
-  void _actionLogout() async {
-    var result = await Utils.dialogCommon(
-        context, "Insta Clone", "Do you want to logout?", false);
-    if (result) {
-      AuthService.signOutUser(context);
-    }
+  void _apiFollowUser(User someone) async {
+    setState(() => isLoading = true);
+
+    await DataService.followUser(someone);
+
+    setState(() {
+      someone.followed = true;
+      isLoading = false;
+    });
+
+    await DataService.storePostsToMyFeed(someone);
+  }
+
+  void _apiUnfollowUser(User someone) async {
+    setState(() => isLoading = true);
+
+    await DataService.unfollowUser(someone);
+
+    setState(() {
+      someone.followed = false;
+      isLoading = false;
+    });
+
+    await DataService.removePostsFromMyFeed(someone);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -123,39 +92,13 @@ class _ProfilePageState extends State<ProfilePage>
             ),
           )
         : Scaffold(
-            appBar: AppBar(
-              title: Row(
-                children: [
-                  const Icon(
-                    Icons.lock_open,
-                    size: 18,
-                    color: Colors.black,
-                  ),
-                  Text(
-                    " ${user?.fullName} ",
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.black,
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  onPressed: () {
-                    _actionLogout();
-                  },
-                  icon: const Icon(Icons.exit_to_app),
-                  color: colorTwo,
-                ),
-              ],
-            ),
+            appBar: AppBar(),
             body: NestedScrollView(
               headerSliverBuilder:
                   (BuildContext context, bool innerBoxIsScrolled) {
                 return [
                   SliverAppBar(
+                    leading: const SizedBox.shrink(),
                     toolbarHeight: 170,
 
                     /// * title
@@ -268,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage>
               Column(
                 children: [
                   Text(
-                    "${user?.followersCount}",
+                    "${user!.followersCount}",
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 20),
                   ),
@@ -296,67 +239,34 @@ class _ProfilePageState extends State<ProfilePage>
           const SizedBox(height: 15),
 
           /// * edit button
-          TextButton(
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(
-                    color: Colors.black,
-                    width: 1.2,
-                  )),
-              backgroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 40),
-            ),
-            onPressed: () => _showPicker(context),
-            child: const Text(
-              "Edit Profile",
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-
-          /// * stores
-          // SizedBox(
-          //   height: 120,
-          //   child: ListView(
-          //     scrollDirection: Axis.horizontal,
-          //     children: [
-          //       GestureDetector(
-          //         onTap: () {},
-          //         child: Container(
-          //           height: 100,
-          //           width: 60,
-          //           margin:
-          //               const EdgeInsets.symmetric(horizontal: 7, vertical: 16),
-          //           child: Column(
-          //             crossAxisAlignment: CrossAxisAlignment.center,
-          //             children: [
-          //               Container(
-          //                 height: 60,
-          //                 width: 60,
-          //                 alignment: Alignment.center,
-          //                 decoration: BoxDecoration(
-          //                   border: Border.all(width: 1, color: Colors.grey),
-          //                   borderRadius: BorderRadius.circular(30),
-          //                 ),
-          //                 child: Container(
-          //                   height: 54,
-          //                   width: 54,
-          //                   decoration: BoxDecoration(
-          //                     borderRadius: BorderRadius.circular(30),
-          //                   ),
-          //                   child: const Icon(Icons.add),
-          //                 ),
-          //               ),
-          //               const SizedBox(height: 7),
-          //             ],
-          //           ),
-          //         ),
-          //       ),
-          //       // ? if add new fiche
-          //       // ...storyList.map((e) => StoryWidget(user: e)).toList(),
-          //     ],
-          //   ),
-          // ),
+          (myUid != widget.uid)
+              ? TextButton(
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(
+                          color: Colors.black,
+                          width: 1.2,
+                        )),
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 40),
+                  ),
+                  onPressed: () {
+                    user!.followed
+                        ? _apiUnfollowUser(user!)
+                        : _apiFollowUser(user!);
+                  },
+                  child: user!.followed
+                      ? const Text(
+                          "Following",
+                          style: TextStyle(color: Colors.black),
+                        )
+                      : const Text(
+                          "Follow",
+                          style: TextStyle(color: Colors.black),
+                        ),
+                )
+              : const SizedBox.shrink(),
         ],
       ),
     );

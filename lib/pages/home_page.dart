@@ -1,8 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/user_model.dart';
 import 'package:flutter_instagram/services/data_service.dart';
+import 'package:flutter_instagram/services/log_service.dart';
+import 'package:flutter_instagram/services/utils.dart';
 import 'package:flutter_instagram/views/themes.dart' show colorTwo;
 
 import 'body_pages/feed_page.dart';
@@ -35,8 +38,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _initNotification();
     _pageController = PageController();
     _loadUser();
+  }
+
+  void _initNotification() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      Log.d(message.data.toString());
+      Utils.showLocalNotification(message, context);
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      Utils.showLocalNotification(message, context);
+    });
   }
 
   void _loadUser() async {
@@ -66,10 +80,10 @@ class _HomePageState extends State<HomePage> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           FeedPage(pageController: _pageController),
-          SearchPage(),
-          UploadPage(),
-          LikePage(),
-          ProfilePage(),
+          const SearchPage(),
+          const UploadPage(),
+          const LikePage(),
+          const ProfilePage(),
         ],
       ),
       bottomNavigationBar: CupertinoTabBar(
@@ -103,7 +117,8 @@ class _HomePageState extends State<HomePage> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
-          child: user != null ? (user!.imgUrl.isNotEmpty
+          child: user != null
+              ? (user!.imgUrl.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: user!.imgUrl,
                       placeholder: (context, url) => const Image(
@@ -117,10 +132,11 @@ class _HomePageState extends State<HomePage> {
                   : const Image(
                       image: AssetImage("assets/images/im_user.jpg"),
                       fit: BoxFit.cover,
-                    )) : const Image(
-            image: AssetImage("assets/images/im_user.jpg"),
-            fit: BoxFit.cover,
-          ),
+                    ))
+              : const Image(
+                  image: AssetImage("assets/images/im_user.jpg"),
+                  fit: BoxFit.cover,
+                ),
         ),
       ),
     );

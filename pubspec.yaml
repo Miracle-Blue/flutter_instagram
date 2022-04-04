@@ -18,6 +18,10 @@ dependencies:
   firebase_storage: ^10.2.9
   firebase_messaging: ^11.2.8
 
+  http: ^0.13.4
+
+  flutter_local_notifications: ^9.4.0
+
   shared_preferences: ^2.0.13
 
   logger: ^1.1.0
@@ -25,6 +29,8 @@ dependencies:
   cached_network_image: ^3.2.0
   intl: ^0.17.0
   device_info_plus: ^3.2.2
+  share_plus: ^4.0.3
+  path_provider: ^2.0.9
 
   font_awesome_flutter: ^9.2.0
   line_icons: ^2.0.1

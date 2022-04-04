@@ -2,8 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/user_model.dart';
 import 'package:flutter_instagram/services/data_service.dart';
+import 'package:flutter_instagram/services/http_service.dart';
 import 'package:flutter_instagram/views/main_texts.dart';
 import 'package:flutter_instagram/views/themes.dart' show colorTwo;
+
+import 'someone_profile_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -26,9 +29,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _apiSearchUsers(String keyword) {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
     DataService.searchUsers(keyword).then((users) => _resSearchUser(users));
   }
 
@@ -129,62 +130,92 @@ class _SearchPageState extends State<SearchPage> {
       height: 90,
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(70),
-              border: Border.all(
-                width: 1.5,
-                color: colorTwo,
+          GestureDetector(
+            onTap: () => {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SomeOneProfile(
+                    uid: user.uid,
+                  ),
+                ),
               ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22.5),
-              child: user.imgUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      height: 40,
-                      width: 40,
-                      fit: BoxFit.cover,
-                      imageUrl: user.imgUrl,
-                      placeholder: (context, url) => const Image(
-                        image: AssetImage("assets/images/im_user.jpg"),
-                        fit: BoxFit.cover,
-                      ),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
-                    )
-                  : const Image(
-                      image: AssetImage("assets/images/im_user.jpg"),
-                      height: 40,
-                      fit: BoxFit.cover,
+            },
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(70),
+                    border: Border.all(
+                      width: 1.5,
+                      color: colorTwo,
                     ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22.5),
+                    child: user.imgUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            height: 40,
+                            width: 40,
+                            fit: BoxFit.cover,
+                            imageUrl: user.imgUrl,
+                            placeholder: (context, url) => const Image(
+                              image: AssetImage("assets/images/im_user.jpg"),
+                              fit: BoxFit.cover,
+                            ),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                          )
+                        : const Image(
+                            image: AssetImage("assets/images/im_user.jpg"),
+                            height: 40,
+                            width: 40,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.fullName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      user.email,
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 15),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                user.fullName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                user.email,
-                style: const TextStyle(color: Colors.black54),
-              ),
-            ],
           ),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     user.followed
                         ? _apiUnfollowUser(user)
                         : _apiFollowUser(user);
+
+                    User me = await DataService.loadUser();
+
+                    if (!user.followed) {
+                      await HttpService.POST(
+                        HttpService.API_FCM_SEND,
+                        HttpService.body(
+                          name: me.fullName,
+                          someone: user.fullName,
+                          token: user.deviceToken,
+                        ),
+                      );
+                    }
                   },
                   child: Container(
                     width: 100,

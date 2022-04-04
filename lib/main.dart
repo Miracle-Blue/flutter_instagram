@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'pages/home_page.dart';
 
@@ -16,14 +18,19 @@ import 'pages/body_pages/upload_page.dart';
 
 import 'views/themes.dart' show themeLight;
 
-
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
+  var initAndroidSetting = const AndroidInitializationSettings('@mipmap/ic_launcher_round');
+  var initIosSetting = const IOSInitializationSettings();
+  var initSetting = InitializationSettings(android: initAndroidSetting, iOS: initIosSetting);
+  await FlutterLocalNotificationsPlugin().initialize(initSetting);
 
-
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitDown, DeviceOrientation.portraitUp]).then((value) {
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.portraitUp,
+  ]).then((value) {
     runApp(const MyApp());
   });
 }

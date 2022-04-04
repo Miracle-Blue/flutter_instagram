@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_instagram/models/post_model.dart';
+import 'package:flutter_instagram/pages/body_pages/someone_profile_page.dart';
 import 'package:flutter_instagram/services/data_service.dart';
 import 'package:flutter_instagram/services/log_service.dart';
 import 'package:flutter_instagram/services/utils.dart';
@@ -65,15 +66,16 @@ class _FeedPageState extends State<FeedPage> {
     });
   }
 
-  void _actionRemovePost(Post post) async{
-    var result = await Utils.dialogCommon(context, "Insta Clone", "Do you want to remove this post?", false);
-    if(result != null && result){
+  void _actionRemovePost(Post post) async {
+    var result = await Utils.dialogCommon(
+        context, "Insta Clone", "Do you want to remove this post?", false);
+    if (result) {
       setState(() {
         isLoading = true;
       });
       DataService.removePost(post).then((value) => {
-        _apiLoadFeeds(),
-      });
+            _apiLoadFeeds(),
+          });
     }
   }
 
@@ -129,48 +131,62 @@ class _FeedPageState extends State<FeedPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(40),
-                      child: post.imgUser != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(40),
-                              child: CachedNetworkImage(
+                GestureDetector(
+                  onTap: () => {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SomeOneProfile(
+                          uid: post.uid!,
+                        ),
+                      ),
+                    ),
+                  },
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(40),
+                        child: (post.imgUser != null &&
+                                post.imgUser!.isNotEmpty)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(40),
+                                child: CachedNetworkImage(
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  imageUrl: post.imgUser!,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey,
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              )
+                            : const Image(
+                                image: AssetImage("assets/images/im_user.jpg"),
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
-                                imageUrl: post.imgUser!,
-                                placeholder: (context, url) => Container(
-                                  color: Colors.grey,
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
                               ),
-                            )
-                          : const Image(
-                              image: AssetImage("assets/images/im_user.jpg"),
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                            ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${post.fullName?.substring(0, 1).toUpperCase()}${post.fullName?.substring(1, post.fullName!.length)}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                        Text(
-                          Utils.getMonthDayYear(post.date!),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${post.fullName?.substring(0, 1).toUpperCase()}${post.fullName?.substring(1, post.fullName!.length)}",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
+                          ),
+                          Text(
+                            Utils.getMonthDayYear(post.date!),
+                            style: const TextStyle(color: Colors.black),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   onPressed: () {
@@ -195,7 +211,6 @@ class _FeedPageState extends State<FeedPage> {
             errorWidget: (context, url, error) => const Icon(Icons.error),
             fit: BoxFit.cover,
           ),
-
           //#likeshare
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -217,7 +232,9 @@ class _FeedPageState extends State<FeedPage> {
                           ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      await Utils.share(post: post);
+                    },
                     icon: const Icon(Icons.share_outlined),
                   ),
                 ],
@@ -235,7 +252,10 @@ class _FeedPageState extends State<FeedPage> {
                 children: [
                   TextSpan(
                     text: " ${post.caption}",
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
